@@ -19,7 +19,7 @@ def SoundStreamClient(server_host, server_port):
     CHANNELS = 1
     RATE = 16000
     CHUNK = 4096
-    INPUT_DEVICE_INDEX = 1
+    INPUT_DEVICE_INDEX = 1 # Macbookなら0
 
     # マイクの入力ストリーム生成
     mic_stream = audio.open(format=FORMAT,
