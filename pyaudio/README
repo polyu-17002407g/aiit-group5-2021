@@ -1,7 +1,23 @@
-‹N“®•û–@
-1. ƒRƒ“ƒ\[ƒ‹‚©‚çserver.py‚ğ‹N“®
-2. 1.‚ÌƒRƒ“ƒ\[ƒ‹‚Æ‚Í•Ê‚ÌƒRƒ“ƒ\[ƒ‹‚©‚çAclient.py‚ğ‹N“®
+## ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«
+```
+$ pip install -r requirement.txt
+$ pip install awscli
+```
 
-I—¹•û–@
-1. client.py‚ÌƒRƒ“ƒ\[ƒ‹‚ÅCtrl+C‚Å’â~
-2. server.py‚ª©“®’â~
+## ä½¿ã„æ–¹
+```
+$ aws configure
+AWS Access Key ID [None]: è‡ªåˆ†ã®AK
+AWS Secret Access Key [None]: è‡ªåˆ†ã®SAK
+Default region name [None]: ap-northeast-1
+Default ouput format [None]: json
+```
+
+### èµ·å‹•æ–¹æ³•
+1. server.pyã®ä¸­ã€<region_name>ã¨<bucket_name>ã®éƒ¨åˆ†ã‚’å…¥ã‚Œæ›¿ãˆ
+2. ã‚³ãƒ³ã‚½ãƒ¼ãƒ«ã‹ã‚‰server.pyã‚’èµ·å‹•
+2. 2.ã®ã‚³ãƒ³ã‚½ãƒ¼ãƒ«ã¨ã¯åˆ¥ã®ã‚³ãƒ³ã‚½ãƒ¼ãƒ«ã‹ã‚‰ã€client.pyã‚’èµ·å‹•
+
+### çµ‚äº†æ–¹æ³•
+1. client.pyã®ã‚³ãƒ³ã‚½ãƒ¼ãƒ«ã§Ctrl+Cã§åœæ­¢
+2. server.pyãŒè‡ªå‹•åœæ­¢
