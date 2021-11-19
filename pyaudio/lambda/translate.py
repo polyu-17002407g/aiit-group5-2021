@@ -6,6 +6,8 @@ print('Loading function')
 
 s3 = boto3.client('s3')
 translate = boto3.client('translate')
+db_obj = boto3.resource('dynamodb')
+table = db_obj.Table('<table>')
 
 
 def lambda_handler(event, context):
@@ -18,27 +20,45 @@ def lambda_handler(event, context):
         # S3からオプジェットを取得
         s3_get_resp = s3.get_object(Bucket=bucket, Key=key)
         s3_txt = s3_get_resp['Body'].read()
+        s3_txt = s3_txt.decode('utf-8')
         # 確認
-        print(s3_txt.decode('utf-8'))
+        #print(s3_txt)
         
         # 翻訳
         translate_resp = translate.translate_text(
-            Text=s3_txt.decode('utf-8'),
+            Text=s3_txt,
             SourceLanguageCode='en-',
             TargetLanguageCode='ja'
             )
+        translate_txt = translate_resp.get('TranslatedText')
         # 確認
-        print(translate_resp.get('TranslatedText'))
+        #print(translate_txt)
         
         # S3にアップロード
         output_key = 'translated/' + key[7:]
-        s3_put_resp = s3.put_object(
-            Bucket=bucket,
-            Key=output_key,
-            Body=translate_resp.get('TranslatedText').encode('utf-8')
-            )
-        if s3_put_resp['ResponseMetadata']['HTTPStatusCode'] == 200:
+        #s3_put_resp = s3.put_object(
+        #    Bucket=bucket,
+        #    Key=output_key,
+        #    Body=translate_resp.get('TranslatedText').encode('utf-8')
+        #    )
+        #if s3_put_resp['ResponseMetadata']['HTTPStatusCode'] == 200:
+        #    print('Success')
+        
+        # DynamoDBに保存
+        file_date = key[14:-4]
+        db_resp = table.put_item(
+            Item={
+                'id': int(file_date[0:8]),
+                'date': int(file_date),
+                'origin': s3_txt,
+                'translated': translate_txt,
+                'speaker': '',
+                'sid': ''
+            }
+        )
+        if db_resp['ResponseMetadata']['HTTPStatusCode'] == 200:
             print('Success')
+        
             
         return
     except Exception as e:

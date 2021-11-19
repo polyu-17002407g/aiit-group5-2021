@@ -130,6 +130,7 @@ class StreamingClientWrapper:
             language_code=self.LANG,
             media_sample_rate_hz=self.SAMPLE_RATE,
             media_encoding="pcm",
+            show_speaker_label=True,
         )
         # 文字起こし
         async def write_chunks(stream):
