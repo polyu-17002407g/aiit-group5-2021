@@ -82,14 +82,17 @@ class SoundStreamServer(threading.Thread):
 
 
 class ParseTranscribeResultAndUploadToS3(TranscriptResultStreamHandler):
-    def __init__(self, TranscriptResultStream, bucket_name):
+    def __init__(self, TranscriptResultStream, bucket_name, threshold=3):
         super().__init__(TranscriptResultStream)
         self.S3_CLIENT = boto3.client('s3')
         self.BUCKET_NAME = bucket_name
+        self.THRESHOLD = threshold
+        self.wite_partial = 0
+        self.date_time = None
 
     # S3にアップロード
     def upload_to_s3(self, text):
-        key = "origin/record_{}.txt".format(datetime.now().strftime("%Y%m%d%H%M%S%f"))
+        key = "origin/record_{}.txt".format(self.date_time)
         self.S3_CLIENT.put_object(Body=text, Bucket=self.BUCKET_NAME, Key=key)
 
     # 文字起こしの結果を抽出
@@ -98,6 +101,8 @@ class ParseTranscribeResultAndUploadToS3(TranscriptResultStreamHandler):
         num_chars_printed = 0
         interim_flush_counter = 0
         for result in results:
+            if not self.date_time:
+                self.date_time = datetime.now().strftime("%Y%m%d%H%M%S%f")
             transcript = result.alternatives[0].transcript
             overwrite_chars = " " * (num_chars_printed - len(transcript))
             if result.is_partial:
@@ -107,10 +112,18 @@ class ParseTranscribeResultAndUploadToS3(TranscriptResultStreamHandler):
                 interim_flush_counter += 1
 
                 num_chars_printed = len(transcript)
+                self.wite_partial += 1
+                if self.wite_partial < self.THRESHOLD:
+                    pass
+                else:
+                    self.wite_partial = 0
+                    self.upload_to_s3(transcript)
             else:
                 # 文字起こしの結果が決定
                 text = transcript + overwrite_chars
                 self.upload_to_s3(text)
+                self.date_time = None
+                self.wite_partial = 0
                 # print(text)
                 num_chars_printed = 0
 
