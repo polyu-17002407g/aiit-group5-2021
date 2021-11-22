@@ -82,7 +82,7 @@ class SoundStreamServer(threading.Thread):
 
 
 class ParseTranscribeResultAndUploadToS3(TranscriptResultStreamHandler):
-    def __init__(self, TranscriptResultStream, bucket_name, threshold=3):
+    def __init__(self, TranscriptResultStream, bucket_name, threshold=2):
         super().__init__(TranscriptResultStream)
         self.S3_CLIENT = boto3.client('s3')
         self.BUCKET_NAME = bucket_name
@@ -143,6 +143,7 @@ class StreamingClientWrapper:
             language_code=self.LANG,
             media_sample_rate_hz=self.SAMPLE_RATE,
             media_encoding="pcm",
+            show_speaker_label=True,
         )
         # 文字起こし
         async def write_chunks(stream):
