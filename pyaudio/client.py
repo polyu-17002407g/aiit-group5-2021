@@ -18,7 +18,8 @@ def SoundStreamClient(server_host, server_port):
     FORMAT = pyaudio.paInt16
     CHANNELS = 1
     RATE = 16000
-    CHUNK = 4096
+    # CHUNK = 4096
+    CHUNK = 2048
     INPUT_DEVICE_INDEX = 1 # Macbookなら0
 
     # マイクの入力ストリーム生成
@@ -37,7 +38,7 @@ def SoundStreamClient(server_host, server_port):
         sock.send("{},{},{},{}".format(
             FORMAT, CHANNELS, RATE, CHUNK).encode('utf-8'))
 
-        print("Start")
+        print("Soundcapture Start")
         # メインループ
         while True:
             if streamstop == False:
@@ -50,6 +51,7 @@ def SoundStreamClient(server_host, server_port):
                 sock.send(send_data)
 
             else:
+                print("SoundCapture Stop")
                 break
 
     # 終了処理
@@ -59,6 +61,7 @@ def SoundStreamClient(server_host, server_port):
 
 def main_func():
     global streamstop
+    streamstop = False
     mss_client = threading.Thread(target=SoundStreamClient, args=("localhost", 12345,))
     mss_client.start()
 
@@ -71,6 +74,16 @@ def main_func():
             break
 
     mss_client.join()
+
+
+def stop_client():
+    global streamstop
+    streamstop = True
+
+
+def start_client():
+    main_func()
+
 
 if __name__ == '__main__':
     main_func()

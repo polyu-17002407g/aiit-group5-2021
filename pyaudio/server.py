@@ -82,7 +82,7 @@ class SoundStreamServer(threading.Thread):
 
 
 class ParseTranscribeResultAndUploadToS3(TranscriptResultStreamHandler):
-    def __init__(self, TranscriptResultStream, bucket_name, threshold=2):
+    def __init__(self, TranscriptResultStream, bucket_name, threshold=1):
         super().__init__(TranscriptResultStream)
         self.S3_CLIENT = boto3.client('s3')
         self.BUCKET_NAME = bucket_name
