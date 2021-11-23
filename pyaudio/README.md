@@ -14,7 +14,7 @@ Default ouput format [None]: json
 ```
 
 ### 起動方法
-1. server.pyの行20〜23、<region>と<bucket>と<table>の部分を自分の値に変更
+1. server.pyの行20〜23、\<region\>と\<bucket\>と\<table\>の部分を自分の値に変更
 2. コンソールからserver.pyを起動
 2. 2.のコンソールとは別のコンソールから、client.pyを起動
 
