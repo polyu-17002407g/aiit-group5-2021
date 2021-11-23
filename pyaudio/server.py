@@ -14,6 +14,12 @@ from amazon_transcribe.model import TranscriptEvent
 
 queue = Queue()
 no_data = False
+s3 = boto3.client('s3')
+translate = boto3.client('translate')
+db_obj = boto3.resource('dynamodb')
+table = db_obj.Table('<table>')
+region = '<region>'
+bucket_name = '<bucket>'
 
 class SoundStreamServer(threading.Thread):
     def __init__(self, server_host, server_port):
@@ -82,50 +88,85 @@ class SoundStreamServer(threading.Thread):
 
 
 class ParseTranscribeResultAndUploadToS3(TranscriptResultStreamHandler):
-    def __init__(self, TranscriptResultStream, bucket_name, threshold=1):
+    def __init__(self, TranscriptResultStream, bucket_name, threshold=2):
         super().__init__(TranscriptResultStream)
         self.S3_CLIENT = boto3.client('s3')
         self.BUCKET_NAME = bucket_name
         self.THRESHOLD = threshold
         self.wite_partial = 0
         self.date_time = None
+        self.translated_text = ''
 
     # S3にアップロード
-    def upload_to_s3(self, text):
-        key = "origin/record_{}.txt".format(self.date_time)
-        self.S3_CLIENT.put_object(Body=text, Bucket=self.BUCKET_NAME, Key=key)
+    # def upload_to_s3(self, text):
+    #     key = "origin/record_{}.txt".format(self.date_time)
+    #     self.S3_CLIENT.put_object(Body=text, Bucket=self.BUCKET_NAME, Key=key)
+
+    # 翻訳
+    def translate_text(self, text):
+        try:
+            translate_resp = translate.translate_text(
+                Text=text,
+                SourceLanguageCode='en',
+                TargetLanguageCode='ja'
+            )
+            return translate_resp.get('TranslatedText')
+        except Exception as e:
+            print(e)
+
+    # DynamoDBにアップロード
+    def upload_to_db(self, text):
+        try:
+            db_resp = table.put_item(
+                Item={
+                    'id': int(self.date_time[0:8]),
+                    'date': int(self.date_time),
+                    'origin': text,
+                    'translated': self.translated_text,
+                    'speaker': '',
+                    'sid': ''
+                }
+            )
+        except Exception as e:
+            print(e)
+
+    # 翻訳とDBにアップロード
+    def translate_and_upload(self, text):
+        self.translated_text = self.translate_text(text)
+        self.upload_to_db(text)
 
     # 文字起こしの結果を抽出
     async def handle_transcript_event(self, transcript_event: TranscriptEvent):
         results = transcript_event.transcript.results
-        num_chars_printed = 0
-        interim_flush_counter = 0
+        # num_chars_printed = 0
+        # interim_flush_counter = 0
         for result in results:
             if not self.date_time:
                 self.date_time = datetime.now().strftime("%Y%m%d%H%M%S%f")
             transcript = result.alternatives[0].transcript
-            overwrite_chars = " " * (num_chars_printed - len(transcript))
+            # overwrite_chars = " " * (num_chars_printed - len(transcript))
             if result.is_partial:
                 # 文字起こしの途中
-                sys.stdout.write(transcript + overwrite_chars + "\r")
-                sys.stdout.flush()
-                interim_flush_counter += 1
+                # sys.stdout.write(transcript + overwrite_chars + "\r")
+                # sys.stdout.flush()
+                # interim_flush_counter += 1
 
-                num_chars_printed = len(transcript)
+                # num_chars_printed = len(transcript)
                 self.wite_partial += 1
                 if self.wite_partial < self.THRESHOLD:
-                    pass
+                    self.upload_to_db(transcript)
                 else:
                     self.wite_partial = 0
-                    self.upload_to_s3(transcript)
+                    self.translate_and_upload(text=transcript)
             else:
                 # 文字起こしの結果が決定
-                text = transcript + overwrite_chars
-                self.upload_to_s3(text)
+                text = transcript # + overwrite_chars
+                self.translate_and_upload(text)
+                self.translated_text = ''
                 self.date_time = None
                 self.wite_partial = 0
                 # print(text)
-                num_chars_printed = 0
+                # num_chars_printed = 0
 
 
 class StreamingClientWrapper:
@@ -158,7 +199,7 @@ class StreamingClientWrapper:
 
 if __name__ == '__main__':
     mss_server = SoundStreamServer("localhost", 12345)
-    wrapper = StreamingClientWrapper("<region>", "en-US", 16000, "<bucket_name>")
+    wrapper = StreamingClientWrapper(region, "en-US", 16000, bucket_name)
 
     loop = asyncio.get_event_loop()
     mss_server.start()
